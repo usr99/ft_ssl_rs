@@ -4,8 +4,6 @@ use std::fmt::Display;
 pub mod md5;
 pub mod sha256;
 
-pub type Hasher = fn(&[u8]) -> Hash;
-
 pub struct Hash(Vec<u8>);
 
 impl Display for Hash {

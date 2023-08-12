@@ -2,6 +2,9 @@ use crate::Hash;
 
 use std::mem::size_of;
 
+const BLOCK_SIZE: usize = 64;	// 512 bits
+const DIGEST_SIZE: usize = 16;	// 128 bits
+
 const S: [u32; 64] = [
 	7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
 	5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
@@ -28,9 +31,6 @@ const K: [u32; 64] = [
 	0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391	
 ];
 
-const BLOCK_SIZE: usize = 64;	// bytes
-const DIGEST_SIZE: usize = 128; // bits
-
 pub fn hash(message: &[u8]) -> Hash {
 	// MD5 works with blocks of 512 bits
 	// from the original message we will append a single 1
@@ -44,7 +44,7 @@ pub fn hash(message: &[u8]) -> Hash {
 	input.extend_from_slice(message);							// original message
 	input.push(1 << 7);											// 1 bit
 	input.resize(bytes - std::mem::size_of::<u64>(), 0);		// padding with 0
-	input.extend_from_slice(&(bitlen as u64).to_le_bytes());	// message length in bits
+	input.extend_from_slice(&(bitlen as u64).to_le_bytes());	// message length in bits (LSB)
 
 	let mut digest: [u32; 4] = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476];
 	for i in (0..bytes).step_by(BLOCK_SIZE) {
@@ -82,9 +82,9 @@ pub fn hash(message: &[u8]) -> Hash {
 	}
 
 	// Clone the digest to a Vec<u8>
-	let mut output = Vec::with_capacity(DIGEST_SIZE / 8);
-	for int32 in digest {
-		output.extend_from_slice(&int32.to_le_bytes());
+	let mut output = Vec::with_capacity(DIGEST_SIZE);
+	for uint32 in digest {
+		output.extend_from_slice(&uint32.to_le_bytes());
 	}
 
 	Hash(output)
