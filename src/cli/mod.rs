@@ -7,49 +7,43 @@ use std::{
 	ffi::OsString,
 	iter::{Once, Chain}
 };
-use clap::Parser;
-use anyhow::{Result, anyhow};
+use clap::{Parser, Command, Arg};
+use anyhow::anyhow;
 
 pub trait Cipher {
 	fn execute(&self) -> anyhow::Result<()>;
 }
 
-type Iter = Chain<Once<OsString>, ArgsOs>;
-
 macro_rules! parse_options {
 	($struct_name:ty) => {
-		|args: Iter| Box::new(<$struct_name>::parse_from(args))
+		|args: Vec<String>| {
+			<$struct_name>::try_parse_from(args)
+				.and_then(|opt| Ok(Box::new(opt) as Box<dyn Cipher>))
+		}
 	}
 }
 
-const ENCRYPTIONS: [(&str, fn(Iter) -> Box<dyn Cipher>); 2] = [
+const ENCRYPTIONS: [(&str, fn(Vec<String>) -> Result<Box<dyn Cipher>, clap::error::Error>); 2] = [
 	("md5", parse_options!(hash::MD5Options)),
 	("sha256", parse_options!(hash::SHA256Options))
 ];
 
-pub fn parse_cipher(command: &str, mut args: ArgsOs) -> Option<Box<dyn Cipher>> {
+pub fn parse_cipher(command: &str, args: Vec<String>) -> Option<Box<dyn Cipher>> {
 	match ENCRYPTIONS.iter().find(|(name, _)| &command == name) {
-		Some((_, parse)) => {
-			let mut prefix = args.next().unwrap();
-			prefix.push(" ");
-			prefix.push(args.next().unwrap());
-			let args = std::iter::once(prefix).chain(args);
-
-			Some(parse(args))
+		Some((_, parse)) => match parse(args) {
+			Ok(cipher) => Some(cipher),
+			Err(e) => { e.print(); None }
 		},
-		None => None
-	}
-}
+		None => {
+			eprintln!("bad command: {command}\n");
+			for (name, _) in ENCRYPTIONS {
+				eprintln!("{name}")
+			}
+			eprintln!("");
 
-pub fn get_commands_list() -> String {
-	let mut list = String::new();
-	
-	for (name, _) in ENCRYPTIONS.iter() {
-		list.push_str(name);
-		list.push('\n');
+			None
+		}
 	}
-
-	return list;
 }
 
 enum Kind {
