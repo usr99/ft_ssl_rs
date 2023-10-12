@@ -23,9 +23,10 @@ macro_rules! parse_options {
 	}
 }
 
-const ENCRYPTIONS: [(&str, fn(Vec<String>) -> Result<Box<dyn Cipher>, clap::error::Error>); 2] = [
+const ENCRYPTIONS: [(&str, fn(Vec<String>) -> Result<Box<dyn Cipher>, clap::error::Error>); 3] = [
 	("md5", parse_options!(hash::MD5Options)),
-	("sha256", parse_options!(hash::SHA256Options))
+	("sha256", parse_options!(hash::SHA256Options)),
+	("base64", parse_options!(base64::Options)),
 ];
 
 pub fn parse_cipher(command: &str, args: Vec<String>) -> Option<Box<dyn Cipher>> {
