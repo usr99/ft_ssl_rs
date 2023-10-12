@@ -112,6 +112,9 @@ fn print_formatted_hash(name: &str, hash: Hash, src: Input, output_mode: Output)
 	match src {
 		Input::Stdin { buf, echo } => {
 			if echo {
+				// of course 'buf' might contain non valid utf-8
+				// but for this project I need to recreate any bug that the previous C implementation had
+				// "it’s not a bug, it’s a feature"
 				let message = unsafe { std::str::from_utf8_unchecked(&buf) }.trim_end_matches('\n');
 				if let Output::Quiet = output_mode {
 					println!("{message}");
