@@ -1,16 +1,14 @@
 #![allow(unused)]
 mod cli;
 
-use std::io::Write;
+use anyhow::{anyhow, Result};
 use clap::Parser;
-use anyhow::{Result, anyhow};
+use std::io::Write;
 
 fn main() -> Result<()> {
 	let mut args = std::env::args().collect::<Vec<_>>();
 
 	if args.len() > 1 {
-		let program = args[0].clone();
-
 		// We already parsed the command
 		// but we still want clap to print the program name
 		// so we merge the first two arguments into one
@@ -30,12 +28,15 @@ fn main() -> Result<()> {
 			std::io::stdin().read_line(&mut buf)
 		} {
 			if bytes == 0 {
-				break ;
+				break;
 			}
-			
-			let mut args = buf.split_whitespace().map(|str| str.to_owned()).collect::<Vec<_>>();
+
+			let mut args = buf
+				.split_whitespace()
+				.map(|str| str.to_owned())
+				.collect::<Vec<_>>();
 			if args.len() == 0 {
-				continue ;
+				continue;
 			}
 
 			let command = args[0].clone();
