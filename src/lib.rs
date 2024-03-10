@@ -4,7 +4,10 @@ use std::fmt::Display;
 pub mod md5;
 pub mod sha256;
 pub mod base64;
+pub mod des;
+pub mod hmac;
 
+#[derive(Debug)]
 pub struct Hash(Vec<u8>);
 
 impl Display for Hash {
