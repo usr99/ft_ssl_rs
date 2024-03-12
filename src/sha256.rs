@@ -102,9 +102,8 @@ pub fn hash(message: &[u8]) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
+	use crate::hex::FromHexString;
 	use ntest::test_case;
-
-use crate::hex::FromHexString;
 
 	#[test_case("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "")]
 	#[test_case("1ceb55d2845d9dd98557b50488db12bbf51aaca5aa9c1199eb795607a2457daf", "https://www.42.fr/\n")]
