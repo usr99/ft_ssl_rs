@@ -1,5 +1,3 @@
-use crate::Hash;
-
 use std::mem::size_of;
 
 const BLOCK_SIZE: usize = 64;	// 512 bits
@@ -31,7 +29,7 @@ const K: [u32; 64] = [
 	0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391	
 ];
 
-pub fn hash(message: &[u8]) -> Hash {
+pub fn hash(message: &[u8]) -> Vec<u8> {
 	// MD5 works with blocks of 512 bits
 	// from the original message we will append a single 1
 	// then a sequence of 0 for padding
@@ -87,11 +85,12 @@ pub fn hash(message: &[u8]) -> Hash {
 		output.extend_from_slice(&uint32.to_le_bytes());
 	}
 
-	Hash(output)
+	output
 }
 
 #[cfg(test)]
 mod tests {
+	use crate::hex::FromHexString;
 	use ntest::test_case;
 
 	#[test_case("d41d8cd98f00b204e9800998ecf8427e", "")]
@@ -101,6 +100,6 @@ mod tests {
 	#[test_case("3553dc7dc5963b583c056d1b9fa3349c", "be sure to handle edge cases carefully\n")]
 	#[test_case("dcdd84e0f635694d2a943fa8d3905281", "but eventually you will understand\n")]
 	fn md5(expected: &str, input: &str) {
-		assert_eq!(crate::hash!(input), expected);
+		assert_eq!(super::hash(input.as_bytes()), expected.decode_hex().unwrap());
 	}
 }

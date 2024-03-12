@@ -1,7 +1,5 @@
 use std::num::Wrapping;
 
-use crate::Hash;
-
 const BLOCK_SIZE: usize = 64;	// 512 bits
 const DIGEST_SIZE: usize = 32;	// 256 bits
 
@@ -16,7 +14,7 @@ const K: [u32; 64] = [
 	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 ];
 
-pub fn hash(message: &[u8]) -> Hash {
+pub fn hash(message: &[u8]) -> Vec<u8> {
 	// SHA256 works with blocks of 512 bits
 	// from the original message we will append a single 1
 	// then a sequence of 0 for padding
@@ -99,12 +97,14 @@ pub fn hash(message: &[u8]) -> Hash {
 		output.extend_from_slice(&uint32.to_be_bytes());
 	}
 
-	Hash(output)
+	output
 }
 
 #[cfg(test)]
 mod tests {
 	use ntest::test_case;
+
+use crate::hex::FromHexString;
 
 	#[test_case("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "")]
 	#[test_case("1ceb55d2845d9dd98557b50488db12bbf51aaca5aa9c1199eb795607a2457daf", "https://www.42.fr/\n")]
@@ -113,6 +113,6 @@ mod tests {
 	#[test_case("145df9000eb3bb2ffc46c68e1d9795129d62af0e9a09b55dc5f3293b03e83b3f", "i hope these tests will be useful")]
 	#[test_case("0c9478ffc28e628885a8db85777a39598086ba333190b3a8031adbd9de730af7", "i hope these tests will ae useful")]
 	fn sha256(expected: &str, input: &str) {
-		assert_eq!(crate::hash!(input), expected);
+		assert_eq!(super::hash(input.as_bytes()), expected.decode_hex().unwrap());
 	}
 } 
