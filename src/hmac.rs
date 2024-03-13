@@ -76,4 +76,18 @@ mod test {
 		let result = super::hmac(sha256::hash, key.as_bytes(), input.as_bytes(), 64);
 		assert_eq!(result.encode_hex(), expected)
 	}
+
+	#[test]
+	fn hmac_collision() {
+		let input = "both passwords should produce the same output because of the way hmac prepares keys".as_bytes();
+		let password = "plnlrtfpijpuhqylxbgqiiyipieyxvfsavzgxbbcfusqkozwpngsyejqlmjsytrmd".as_bytes();
+		let digest = sha256::hash(password);
+
+		assert_ne!(password, digest);
+
+		let from_password = super::hmac(sha256::hash, password, input, 64);
+		let from_digest = super::hmac(sha256::hash, &digest, input, 64);
+
+		assert_eq!(from_password, from_digest)
+	}
 }
