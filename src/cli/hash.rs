@@ -1,5 +1,5 @@
 use super::Cipher;
-use ft_ssl::{hex::ToHexString, md5, sha256};
+use ft_ssl::{hex::ToHexString, Hasher};
 
 use anyhow::Result;
 use clap::{Args, Parser, ValueEnum};
@@ -47,7 +47,7 @@ pub struct MD5Options {
 }
 
 impl Cipher for MD5Options {
-	fn execute(&self) -> Result<()> { inner_execute("MD5", md5::hash, &self.opts) }
+	fn execute(&self) -> Result<()> { inner_execute::<ft_ssl::MD5>("MD5", &self.opts) }
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -57,10 +57,10 @@ pub struct SHA256Options {
 }
 
 impl Cipher for SHA256Options {
-	fn execute(&self) -> Result<()> { inner_execute("SHA256", sha256::hash, &self.opts) }
+	fn execute(&self) -> Result<()> { inner_execute::<ft_ssl::SHA256>("SHA256", &self.opts) }
 }
 
-fn inner_execute(name: &str, algorithm: fn(&[u8]) -> Vec<u8>, opts: &Options) -> Result<()> {
+fn inner_execute<H: Hasher>(name: &str, opts: &Options) -> Result<()> {
 	let mut output_mode = Output::Default;
 	if opts.reverse {
 		output_mode = Output::Reversed;
@@ -74,10 +74,10 @@ fn inner_execute(name: &str, algorithm: fn(&[u8]) -> Vec<u8>, opts: &Options) ->
 		let mut buf = Vec::new();
 		std::io::stdin().read_to_end(&mut buf)?;
 
-		let hash = algorithm(&buf);
+		let hash = H::hash(&buf);
 		print_formatted_hash(
 			name,
-			&hash,
+			hash.as_ref(),
 			Input::Stdin {
 				buf,
 				echo: opts.echo_stdin
@@ -87,8 +87,8 @@ fn inner_execute(name: &str, algorithm: fn(&[u8]) -> Vec<u8>, opts: &Options) ->
 	}
 
 	for str in opts.strings.iter() {
-		let hash = algorithm(str.as_bytes());
-		print_formatted_hash(name, &hash, Input::CommandLine(str), output_mode);
+		let hash = H::hash(str.as_bytes());
+		print_formatted_hash(name, hash.as_ref(), Input::CommandLine(str), output_mode);
 	}
 
 	for filename in opts.files.iter() {
@@ -102,8 +102,8 @@ fn inner_execute(name: &str, algorithm: fn(&[u8]) -> Vec<u8>, opts: &Options) ->
 		};
 		file.read_to_end(&mut buf)?;
 
-		let hash = algorithm(&buf);
-		print_formatted_hash(name, &hash, Input::File(filename), output_mode);
+		let hash = H::hash(&buf);
+		print_formatted_hash(name, hash.as_ref(), Input::File(filename), output_mode);
 	}
 
 	Ok(())

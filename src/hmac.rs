@@ -1,19 +1,28 @@
+use super::{Hasher, PRF};
 use std::cmp::Ordering;
 
 const IPAD: u8 = 0x36;
 const OPAD: u8 = 0x5c;
 
-// See https://en.wikipedia.org/wiki/HMAC
-pub fn hmac(hash: fn(&[u8]) -> Vec<u8>, key: &[u8], message: &[u8], block_size: usize) -> Vec<u8> {
-	let key = prepare_key(hash, key, block_size);
+pub struct HMAC<H: Hasher> {
+	unused: std::marker::PhantomData<H>
+}
 
-	let mut inner = xor(&vec![IPAD; block_size], &key);
-	inner.extend_from_slice(message);
+impl<H: Hasher> PRF for HMAC<H> {
+	type Output = H::Digest;
 
-	let mut outer = xor(&vec![OPAD; block_size], &key);
-	outer.extend_from_slice(hash(&inner).as_ref());
+	// See https://en.wikipedia.org/wiki/HMAC
+	fn randgen(key: &[u8], message: &[u8]) -> Self::Output {
+		let key = prepare_key::<H>(key);
 
-	hash(&outer)
+		let mut inner = xor(&vec![IPAD; H::BLOCK_SIZE], &key);
+		inner.extend_from_slice(message);
+
+		let mut outer = xor(&vec![OPAD; H::BLOCK_SIZE], &key);
+		outer.extend_from_slice(H::hash(&inner).as_ref());
+
+		H::hash(&outer)
+	}
 }
 
 // Apply XOR on 2 byte sequences
@@ -23,23 +32,23 @@ fn xor(left: &[u8], right: &[u8]) -> Vec<u8> {
 	left.iter().zip(right.iter()).map(|(a, b)| a ^ b).collect()
 }
 
-fn prepare_key(hash: fn(&[u8]) -> Vec<u8>, key: &[u8], block_size: usize) -> Vec<u8> {
+fn prepare_key<H: Hasher>(key: &[u8]) -> Vec<u8> {
 	// Hash the key if it's too long
-	let mut key = match key.len().cmp(&block_size) {
-		Ordering::Greater => hash(&key),
-		_ => key.to_vec(),
+	let mut key = match key.len().cmp(&H::BLOCK_SIZE) {
+		Ordering::Greater => H::hash(&key).as_ref().to_vec(),
+		_ => key.to_vec()
 	};
 
 	// The key must be of length block_size
 	// append 0s if necessary
-	key.resize(block_size, 0);
+	key.resize(H::BLOCK_SIZE, 0);
 
 	key
 }
 
 #[cfg(test)]
 mod test {
-	use crate::{hex::ToHexString, sha256};
+	use crate::{hex::ToHexString, Hasher, PRF, SHA256};
 	use ntest::test_case;
 
 	#[test_case(
@@ -73,20 +82,23 @@ mod test {
 		"3249254036318733e326f225ebcd99e58b55cd31b43d9808220f9d7d2e6aa871"
 	)]
 	fn hmac_sha256(key: &str, input: &str, expected: &str) {
-		let result = super::hmac(sha256::hash, key.as_bytes(), input.as_bytes(), 64);
+		let result = super::HMAC::<SHA256>::randgen(key.as_bytes(), input.as_bytes());
 		assert_eq!(result.encode_hex(), expected)
 	}
 
 	#[test]
 	fn hmac_collision() {
-		let input = "both passwords should produce the same output because of the way hmac prepares keys".as_bytes();
-		let password = "plnlrtfpijpuhqylxbgqiiyipieyxvfsavzgxbbcfusqkozwpngsyejqlmjsytrmd".as_bytes();
-		let digest = sha256::hash(password);
+		let input =
+			"both passwords should produce the same output because of the way hmac prepares keys"
+				.as_bytes();
+		let password =
+			"plnlrtfpijpuhqylxbgqiiyipieyxvfsavzgxbbcfusqkozwpngsyejqlmjsytrmd".as_bytes();
+		let digest = SHA256::hash(password);
 
 		assert_ne!(password, digest);
 
-		let from_password = super::hmac(sha256::hash, password, input, 64);
-		let from_digest = super::hmac(sha256::hash, &digest, input, 64);
+		let from_password = super::HMAC::<SHA256>::randgen(password, input);
+		let from_digest = super::HMAC::<SHA256>::randgen(&digest, input);
 
 		assert_eq!(from_password, from_digest)
 	}
