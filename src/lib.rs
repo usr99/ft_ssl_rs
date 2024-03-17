@@ -32,3 +32,5 @@ trait PRF {
 mod hmac;
 pub use hmac::HMAC;
 
+mod pbkdf2;
+
