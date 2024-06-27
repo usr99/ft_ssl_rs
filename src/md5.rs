@@ -1,4 +1,4 @@
-use super::Hasher;
+use super::Hash;
 use std::mem::size_of;
 
 const S: [u32; 64] = [
@@ -19,7 +19,7 @@ const K: [u32; 64] = [
 ];
 
 pub struct MD5;
-impl Hasher for MD5 {
+impl Hash for MD5 {
 	// 512 bits
 	const BLOCK_SIZE: usize = 64;
 	// 128 bits
@@ -90,7 +90,7 @@ impl Hasher for MD5 {
 #[cfg(test)]
 mod tests {
 	use crate::hex::FromHexString;
-	use crate::Hasher;
+	use crate::Hash;
 	use ntest::test_case;
 
 	#[test_case("d41d8cd98f00b204e9800998ecf8427e", "")]

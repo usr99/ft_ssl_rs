@@ -1,14 +1,13 @@
-use super::{Hasher, PRF};
+use super::{Hash, PRF, utils::xor};
 use std::cmp::Ordering;
 
 const IPAD: u8 = 0x36;
 const OPAD: u8 = 0x5c;
 
-pub struct HMAC<H: Hasher> {
-	unused: std::marker::PhantomData<H>
-}
+pub struct HMAC<H: Hash>(std::marker::PhantomData<H>);
+impl<H: Hash> PRF for HMAC<H> {
+	const OUTPUT_SIZE: usize = H::DIGEST_SIZE;
 
-impl<H: Hasher> PRF for HMAC<H> {
 	type Output = H::Digest;
 
 	// See https://en.wikipedia.org/wiki/HMAC
@@ -25,14 +24,7 @@ impl<H: Hasher> PRF for HMAC<H> {
 	}
 }
 
-// Apply XOR on 2 byte sequences
-// the two sequences must be of equal length
-fn xor(left: &[u8], right: &[u8]) -> Vec<u8> {
-	assert!(left.len() == right.len());
-	left.iter().zip(right.iter()).map(|(a, b)| a ^ b).collect()
-}
-
-fn prepare_key<H: Hasher>(key: &[u8]) -> Vec<u8> {
+fn prepare_key<H: Hash>(key: &[u8]) -> Vec<u8> {
 	// Hash the key if it's too long
 	let mut key = match key.len().cmp(&H::BLOCK_SIZE) {
 		Ordering::Greater => H::hash(&key).as_ref().to_vec(),
@@ -48,7 +40,7 @@ fn prepare_key<H: Hasher>(key: &[u8]) -> Vec<u8> {
 
 #[cfg(test)]
 mod test {
-	use crate::{hex::ToHexString, Hasher, PRF, SHA256};
+	use crate::{hex::ToHexString, Hash, PRF, SHA256};
 	use ntest::test_case;
 
 	#[test_case(
@@ -103,3 +95,4 @@ mod test {
 		assert_eq!(from_password, from_digest)
 	}
 }
+

@@ -9,10 +9,11 @@ macro_rules! align {
 	($value:expr, $lim:expr) => { (($value + $lim - 1) & !($lim - 1)) }
 }
 
-pub trait Hasher {
+pub trait Hash {
 	const BLOCK_SIZE: usize;
 	const DIGEST_SIZE: usize;
-	type Digest: AsRef<[u8]>;
+
+	type Digest: AsRef<[u8]> + AsMut<[u8]>;
 
 	fn hash(message: &[u8]) -> Self::Digest;
 }

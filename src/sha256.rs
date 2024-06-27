@@ -1,4 +1,4 @@
-use super::Hasher;
+use super::Hash;
 use std::num::Wrapping;
 
 const K: [u32; 64] = [
@@ -13,7 +13,7 @@ const K: [u32; 64] = [
 ];
 
 pub struct SHA256;
-impl Hasher for SHA256 {
+impl Hash for SHA256 {
 	// 512 bits
 	const BLOCK_SIZE: usize = 64;
 	// 256 bits
@@ -118,7 +118,7 @@ impl Hasher for SHA256 {
 #[cfg(test)]
 mod tests {
 	use crate::hex::FromHexString;
-	use crate::Hasher;
+	use crate::Hash;
 	use ntest::test_case;
 
 	#[test_case("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "")]

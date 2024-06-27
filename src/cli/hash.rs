@@ -1,5 +1,5 @@
 use super::Cipher;
-use ft_ssl::{hex::ToHexString, Hasher};
+use ft_ssl::{hex::ToHexString, Hash};
 
 use anyhow::Result;
 use clap::{Args, Parser, ValueEnum};
@@ -60,7 +60,7 @@ impl Cipher for SHA256Options {
 	fn execute(&self) -> Result<()> { inner_execute::<ft_ssl::SHA256>("SHA256", &self.opts) }
 }
 
-fn inner_execute<H: Hasher>(name: &str, opts: &Options) -> Result<()> {
+fn inner_execute<H: Hash>(name: &str, opts: &Options) -> Result<()> {
 	let mut output_mode = Output::Default;
 	if opts.reverse {
 		output_mode = Output::Reversed;
